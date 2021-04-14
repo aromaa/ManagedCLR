@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	  <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ManagedCLR.JIT.x86\ManagedCLR.JIT.x86.csproj" />
+    <ProjectReference Include="..\ManagedCLR.Runtime\ManagedCLR.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

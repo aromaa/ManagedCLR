@@ -1,0 +1,31 @@
+﻿using System;
+
+namespace ManagedCLR.IL.Instructions.Raw
+{
+	public readonly struct BranchGreaterInstruction : ILInstruction
+	{
+		public int ToIndex { get; internal init; }
+
+		public bool Branch => true;
+
+		public T GetValue<T>()
+		{
+			if (typeof(T) == typeof(int))
+			{
+				return (T)(object)this.ToIndex;
+			}
+
+			throw new NotSupportedException();
+		}
+
+		public void Consume(ILConsumer reader)
+		{
+			reader.Consume(this);
+		}
+
+		public static BranchGreaterInstruction ILIndex(int value) => new()
+		{
+			ToIndex = value
+		};
+	}
+}

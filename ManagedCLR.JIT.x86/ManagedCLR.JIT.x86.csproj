@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	  <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ManagedCLR.IL\ManagedCLR.IL.csproj" />
+    <ProjectReference Include="..\ManagedCLR.JIT\ManagedCLR.JIT.csproj" />
+    <ProjectReference Include="..\ManagedCLR.Runtime\ManagedCLR.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>
