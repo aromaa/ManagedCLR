@@ -23,6 +23,10 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 			{
 				writer.WriteByte((byte)this.Value);
 			}
+			else if (!this.RexW)
+			{
+				writer.WriteInt32((int)this.Value);
+			}
 			else
 			{
 				writer.WriteInt64(this.Value);
@@ -31,10 +35,17 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 
 		internal static MoveInstruction RegisterToRegister(int to, int from) => new()
 		{
-			RexW = true,
+			RexW = false,
 
 			OpCode = OpCodes.MoveToRegister,
 			Value = 0b11_000_000 | to << 3 | from
+		};
+
+		internal static MoveInstruction ConstTo(int value, int to) => new()
+		{
+			OpCode = (OpCodes)((int)OpCodes.MoveToRegisterImmediate | to),
+
+			Value = value
 		};
 
 		internal static MoveInstruction ConstTo(long value, int to) => new()
@@ -43,6 +54,13 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 			OpCode = (OpCodes)((int)OpCodes.MoveToRegisterImmediate | to),
 
 			Value = value
+		};
+
+		internal static MoveInstruction Indirect(int from) => new()
+		{
+			OpCode = OpCodes.MoveToRegisterIndirect,
+
+			Value = from
 		};
 	}
 }

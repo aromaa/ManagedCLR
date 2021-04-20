@@ -14,6 +14,8 @@ namespace ManagedCLR.IL.Methods
 
 		public int ArgumentsCount { get; init; }
 
+		public int MaxStack { get; init; }
+
 		public ILMethodDefinition(IEnumerable<ILInstruction> instructions)
 		{
 			this.Instructions = instructions.ToImmutableArray();

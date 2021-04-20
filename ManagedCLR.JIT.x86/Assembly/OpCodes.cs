@@ -31,6 +31,7 @@
 		/// Subbb
 		/// </summary>
 		SubtractImmediate = 0x81,
+		MoveToRegisterIndirect = 0xA1,
 		/// <summary>
 		/// 
 		/// </summary>
@@ -50,6 +51,7 @@
 		JumpShort = 0xEB,
 		CallNearRelative = 0xE8,
 		JumpNearRelative = 0xE9,
+		JumpNearAbsolute = 0xFF,
 		CallNearAbsolute = 0xFF,
 		PushMemory = 0xFF,
 	}

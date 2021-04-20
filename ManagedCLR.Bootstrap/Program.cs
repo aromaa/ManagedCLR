@@ -26,7 +26,7 @@ namespace ManagedCLR.Bootstrap
 				AppDomain appDomain = new();
 				appDomain.Load(mainEntryFile);
 
-				Program.RunMethod(appDomain, appDomain.GetMethod());
+				Program.RunMethod(appDomain, appDomain.GetMethod(new X86JIT()));
 			});
 
 			await rootCommand.InvokeAsync(args);
@@ -46,9 +46,7 @@ namespace ManagedCLR.Bootstrap
 
 		private static unsafe void RunMethod(AppDomain appDomain, TypeMethodHandle entryMethod)
 		{
-			X86JIT jit = new();
-
-			delegate* unmanaged<ulong> entry = (delegate* unmanaged<ulong>)jit.LoadMethod(appDomain, entryMethod);
+			delegate* unmanaged<int> entry = (delegate* unmanaged<int>)entryMethod.EntryPointer;
 
 			Console.WriteLine("ManagedCLR (JIT): " + entry());
 		}

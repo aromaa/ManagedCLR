@@ -12,7 +12,7 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 		{
 			writer.WriteByte((byte)this.OpCode);
 
-			if (this.OpCode == OpCodes.JumpShort)
+			if (this.OpCode == OpCodes.JumpShort || this.OpCode == OpCodes.JumpNearAbsolute)
 			{
 				writer.WriteByte((byte)this.Value);
 			}
@@ -34,6 +34,13 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 			OpCode = OpCodes.JumpNearRelative,
 
 			Value = to
+		};
+
+		internal static JumpInstruction JumpNearAbsolute(int register) => new()
+		{
+			OpCode = OpCodes.JumpNearAbsolute,
+
+			Value = 0b11_100_000 | register
 		};
 	}
 }

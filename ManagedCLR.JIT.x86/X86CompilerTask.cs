@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using ManagedCLR.IL;
 using ManagedCLR.IL.Instructions;
 using ManagedCLR.Runtime.Type.Method;
@@ -70,7 +71,7 @@ namespace ManagedCLR.JIT.x86
 
 			this.writer.Offset = end;
 
-			Console.WriteLine(BitConverter.ToString(this.writer.ToArray()).Replace("-", ""));
+			Console.WriteLine("Method: " + BitConverter.ToString(this.writer.ToArray()).Replace("-", ""));
 		}
 
 		public void Consume<T>(in T instruction) where T : ILInstruction
@@ -101,17 +102,17 @@ namespace ManagedCLR.JIT.x86
 			{
 				X86.PopInstruction.ToRegister(0).Write(ref this.writer);
 				X86.PopInstruction.PopRbp().Write(ref this.writer);
-				X86.ReturnInstruction.NearReturnPop(this.method.IL.ArgumentsCount * 8).Write(ref this.writer);
+				X86.ReturnInstruction.NearReturnPop(this.method.IL.ArgumentsCount * 4).Write(ref this.writer);
 			}
 			else if (instruction is CIL.CallInstruction call)
 			{
-				TypeMethodHandle callMethod = this.method.Loader.ReadMethod(call.Target);
-				
-				//TODO: Don't jit when we see method call
-				X86CompilerTask jitMethod = new(this.jit, this.appDomain, callMethod);
-				jitMethod.Compile();
+				TypeMethodHandle callMethod = this.method.Loader.ReadMethod(this.jit, call.Target);
 
-				X86.MoveInstruction.ConstTo((long)this.jit.Allocate(jitMethod.writer), 0).Write(ref this.writer);
+				unsafe
+				{
+					X86.MoveInstruction.Indirect((int)Unsafe.AsPointer(ref callMethod.EntryPointerRef)).Write(ref this.writer);
+				}
+
 				X86.CallInstruction.NearAbsolute(0).Write(ref this.writer);
 
 				//Return val
@@ -123,7 +124,7 @@ namespace ManagedCLR.JIT.x86
 			}
 			else if (instruction is CIL.LoadArgumentInstruction loadArgument)
 			{
-				X86.PushInstruction.FromRbp((2 + loadArgument.Index) * 8).Write(ref this.writer);
+				X86.PushInstruction.FromRbp((2 + loadArgument.Index) * 4).Write(ref this.writer);
 			}
 			else if (instruction is CIL.AddInstruction add)
 			{

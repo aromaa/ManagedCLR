@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
 	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	  <Nullable>enable</Nullable>
   </PropertyGroup>
 
 	<ItemGroup>
     <ProjectReference Include="..\ManagedCLR.IL\ManagedCLR.IL.csproj" />
+    <ProjectReference Include="..\ManagedCLR.JIT\ManagedCLR.JIT.csproj" />
   </ItemGroup>
 
 </Project>

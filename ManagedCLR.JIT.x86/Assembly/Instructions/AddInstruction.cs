@@ -12,7 +12,7 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 
 		public void Write(ref BlobWriter writer)
 		{
-			writer.WriteByte(0x48); //REX.W
+			//writer.WriteByte(0x48); //REX.W
 			writer.WriteByte((byte)this.OpCode);
 			writer.WriteByte(this.Extension);
 
