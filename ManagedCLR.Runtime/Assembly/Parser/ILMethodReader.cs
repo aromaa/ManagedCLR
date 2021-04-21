@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using ManagedCLR.IL;
 using ManagedCLR.IL.Instructions;
 using ManagedCLR.IL.Instructions.Parser;
+using ManagedCLR.IL.Instructions.Raw;
 
 namespace ManagedCLR.Runtime.Assembly.Parser
 {
@@ -40,6 +42,10 @@ namespace ManagedCLR.Runtime.Assembly.Parser
 		protected override void Read<T>(T instruction, int offset)
 		{
 			int index = this.instructions.Count;
+			if (index > 0 && this.instructions[index - 1].Branch)
+			{
+				this.leaders.Add(offset);
+			}
 
 			this.instructions.Add(instruction);
 			this.ilOffset.Add(offset, index);
@@ -53,6 +59,9 @@ namespace ManagedCLR.Runtime.Assembly.Parser
 
 		protected override void ReadEnd()
 		{
+			//Workaround for empty list bcs I'm lazy
+			this.leaders.Add(int.MaxValue);
+
 			//Construct basic blocks, this could be optimized
 			for (int i = 0; i < this.instructions.Count; )
 			{
