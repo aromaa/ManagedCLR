@@ -1,4 +1,5 @@
 ﻿using System.Reflection.Metadata;
+using System.Security.Cryptography;
 using ManagedCLR.JIT.Assembly.Instructions;
 
 namespace ManagedCLR.JIT.x86.Assembly.Instructions
@@ -9,6 +10,7 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 
 		internal OpCodes OpCode { get; private init; }
 		internal long Value { get; private init; }
+		internal int? Other { get; private init; }
 
 		public void Write(ref BlobWriter writer)
 		{
@@ -22,6 +24,11 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 			if (this.OpCode == OpCodes.MoveToRegister)
 			{
 				writer.WriteByte((byte)this.Value);
+
+				if (this.Other is not null)
+				{
+					writer.WriteByte((byte)this.Other);
+				}
 			}
 			else if (!this.RexW)
 			{
@@ -61,6 +68,14 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 			OpCode = OpCodes.MoveToRegisterIndirect,
 
 			Value = from
+		};
+
+		internal static MoveInstruction ToEax(int offset) => new()
+		{
+			OpCode = OpCodes.MoveToRegister,
+
+			Value = 0x58,
+			Other = offset
 		};
 	}
 }

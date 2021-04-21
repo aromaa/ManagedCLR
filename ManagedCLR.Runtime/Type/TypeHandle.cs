@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -22,6 +23,10 @@ namespace ManagedCLR.Runtime.Type
 
 		private ConcurrentDictionary<string, TypeMethodHandle> methods;
 
+		public Dictionary<string, int> Offsets { get; init; }
+
+		public int Size { get; init; }
+
 		public TypeHandle(TypeLoader typeLoader)
 		{
 			this.typeLoader = typeLoader;
@@ -29,12 +34,26 @@ namespace ManagedCLR.Runtime.Type
 			this.methods = new ConcurrentDictionary<string, TypeMethodHandle>();
 		}
 
-		internal TypeMethodHandle LoadMethod(BaseJIT jit, AssemblyLoader loader, MetadataReader reader, MethodDefinition method, MethodBodyBlock methodBody)
+		internal TypeMethodHandle LoadMethod(BaseJIT jit, AssemblyLoader loader, MetadataReader reader, MethodDefinitionHandle ilHandle, MethodBodyBlock methodBody)
 		{
+			MethodDefinition method = reader.GetMethodDefinition(ilHandle);
+
 			string methodName = reader.GetString(method.Name);
 
 			ILMethodReader ilReader = new();
 			ilReader.Read(methodBody);
+
+			ImmutableArray<TypeHandle> locals;
+			if (!methodBody.LocalSignature.IsNil)
+			{
+				StandaloneSignature localSignature = reader.GetStandaloneSignature(methodBody.LocalSignature);
+
+				locals = localSignature.DecodeLocalSignature(this.typeLoader, null!);
+			}
+			else
+			{
+				locals = ImmutableArray<TypeHandle>.Empty;
+			}
 
 			ILMethodDefinition il = new(ilReader.instructions)
 			{
@@ -48,7 +67,9 @@ namespace ManagedCLR.Runtime.Type
 
 			TypeMethodHandle handle = new(jit, this.typeLoader.GetNextSlot(), il)
 			{
-				Loader = loader
+				Loader = loader,
+
+				Locals = locals
 			};
 
 			this.typeLoader.RegisterMethodHandle(handle);

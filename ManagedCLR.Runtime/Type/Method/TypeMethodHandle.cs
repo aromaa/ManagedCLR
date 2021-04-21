@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using ManagedCLR.IL.Methods;
 using ManagedCLR.JIT;
@@ -50,6 +51,8 @@ namespace ManagedCLR.Runtime.Type.Method
 		public BaseJIT Jit { get; }
 
 		internal PinnedData ClrData { get; }
+
+		public ImmutableArray<TypeHandle> Locals { get; init; }
 
 		public TypeMethodHandle(BaseJIT jit, uint slot, ILMethodDefinition il)
 		{

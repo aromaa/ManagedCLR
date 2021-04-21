@@ -64,5 +64,12 @@ namespace ManagedCLR.JIT.x86.Assembly.Instructions
 			OpCode = OpCodes.PushImmediate32,
 			Value = value
 		};
+
+		internal static PushInstruction FromRax(int value) => new()
+		{
+			OpCode = OpCodes.PushMemory,
+			Register = 0x70,
+			Value = value
+		};
 	}
 }

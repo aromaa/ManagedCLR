@@ -4,6 +4,7 @@ using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using ManagedCLR.IL;
 using ManagedCLR.IL.Instructions;
+using ManagedCLR.Runtime.Type;
 using ManagedCLR.Runtime.Type.Method;
 using CIL = ManagedCLR.IL.Instructions.Raw;
 using X86 = ManagedCLR.JIT.x86.Assembly.Instructions;
@@ -23,6 +24,8 @@ namespace ManagedCLR.JIT.x86
 		private Dictionary<int, int> blocksStart;
 		private Dictionary<int, (int, BranchType)> backpatching;
 
+		private int localsSize = 0;
+
 		internal X86CompilerTask(X86JIT jit, AppDomain appDomain, TypeMethodHandle method)
 		{
 			this.jit = jit;
@@ -40,6 +43,8 @@ namespace ManagedCLR.JIT.x86
 		{
 			X86.PushInstruction.PushRbp().Write(ref this.writer);
 			X86.MoveInstruction.RegisterToRegister(4, 5).Write(ref this.writer);
+
+			X86.SubtractInstruction.ConstantFrom(this.method.IL.MaxStack * 4, 4).Write(ref this.writer);
 
 			foreach ((int offset, BasicBlock block) in this.method.IL.Blocks)
 			{
@@ -101,6 +106,7 @@ namespace ManagedCLR.JIT.x86
 			else if (instruction is CIL.ReturnInstruction @return)
 			{
 				X86.PopInstruction.ToRegister(0).Write(ref this.writer);
+				X86.AddInstruction.ConstantFrom(this.method.IL.MaxStack * 4, 4).Write(ref this.writer);
 				X86.PopInstruction.PopRbp().Write(ref this.writer);
 				X86.ReturnInstruction.NearReturnPop(this.method.IL.ArgumentsCount * 4).Write(ref this.writer);
 			}
@@ -144,6 +150,34 @@ namespace ManagedCLR.JIT.x86
 				this.backpatching.Add(this.writer.Offset, (branchGreater.ToIndex, BranchType.Grater));
 
 				X86.JumpGreaterInstruction.JumpTo(0).Write(ref this.writer);
+			}
+			else if (instruction is CIL.LoadLocalAddressInstruction loadLocalAddress)
+			{
+				X86.LoadEffectiveAddressInstruction.Ebp((loadLocalAddress.Index - 1) * 4).Write(ref this.writer);
+				X86.PushInstruction.FromRegister(1).Write(ref this.writer);
+			}
+			else if (instruction is CIL.InitObjectInstruction initObject)
+			{
+				X86.PopInstruction.ToRegister(0).Write(ref this.writer);
+			}
+			else if (instruction is CIL.LoadFieldValueInstruction loadFieldValue)
+			{
+				FieldDefinition field = this.method.Loader.metadata.GetFieldDefinition(loadFieldValue.Target);
+
+				TypeHandle type = this.appDomain.TypeLoader.LoadType(this.method.Loader.metadata, this.method.Loader.metadata.GetTypeDefinition(field.GetDeclaringType()));
+
+				X86.PopInstruction.ToRegister(0).Write(ref this.writer);
+				X86.PushInstruction.FromRax(type.Offsets[this.method.Loader.metadata.GetString(field.Name)]).Write(ref this.writer);
+			}
+			else if (instruction is CIL.SaveFieldValueInstruction saveFieldValue)
+			{
+				FieldDefinition field = this.method.Loader.metadata.GetFieldDefinition(saveFieldValue.Target);
+
+				TypeHandle type = this.appDomain.TypeLoader.LoadType(this.method.Loader.metadata, this.method.Loader.metadata.GetTypeDefinition(field.GetDeclaringType()));
+
+				X86.PopInstruction.ToRegister(3).Write(ref this.writer);
+				X86.PopInstruction.ToRegister(0).Write(ref this.writer);
+				X86.MoveInstruction.ToEax(type.Offsets[this.method.Loader.metadata.GetString(field.Name)]).Write(ref this.writer);
 			}
 			else
 			{

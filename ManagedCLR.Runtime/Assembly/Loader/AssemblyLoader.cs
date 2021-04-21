@@ -18,7 +18,7 @@ namespace ManagedCLR.Runtime.Assembly.Loader
 		private readonly TypeLoader typeLoader;
 
 		private readonly PEReader peReader;
-		private readonly MetadataReader metadata;
+		public readonly MetadataReader metadata;
 
 		public AssemblyLoader(TypeLoader typeLoader, string path)
 		{
@@ -38,7 +38,25 @@ namespace ManagedCLR.Runtime.Assembly.Loader
 			TypeHandle typeHandle = this.typeLoader.LoadType(this.metadata, typeDefinition);
 			MethodBodyBlock methodBody = this.peReader.GetMethodBody(methodDefinition.RelativeVirtualAddress);
 
-			return typeHandle.LoadMethod(jit, this, this.metadata, methodDefinition, methodBody);
+			return typeHandle.LoadMethod(jit, this, this.metadata, methodHandle, methodBody);
+		}
+
+		public TypeDefinition GetType(string name)
+		{
+			foreach (TypeDefinitionHandle typeHandle in this.metadata.TypeDefinitions)
+			{
+				TypeDefinition type = this.metadata.GetTypeDefinition(typeHandle);
+
+				string namespaceName = this.metadata.GetString(type.Namespace);
+				string typeName = this.metadata.GetString(type.Name);
+
+				if ($"{namespaceName}.{typeName}" == name)
+				{
+					return type;
+				}
+			}
+
+			throw new KeyNotFoundException();
 		}
 	}
 }

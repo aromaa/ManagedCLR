@@ -40,6 +40,7 @@
 		/// Wow!
 		/// </summary>
 		MoveToRegister = 0x89,
+		LoadEffectiveAddress = 0x8D,
 		/// <summary>
 		/// Return
 		/// </summary>

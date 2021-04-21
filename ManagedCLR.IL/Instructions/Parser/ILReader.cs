@@ -43,6 +43,10 @@ namespace ManagedCLR.IL.Instructions.Parser
 						this.Read(LoadLocalInstruction.FromIndex(1), offset);
 						break;
 
+					case ILOpCode.Ldloca_s:
+						this.Read(LoadLocalAddressInstruction.FromIndex(reader.ReadSByte()), offset);
+						break;
+
 					case ILOpCode.Stloc_0:
 						this.Read(StoreLocalInstruction.ToIndex(0), offset);
 						break;
@@ -99,6 +103,18 @@ namespace ManagedCLR.IL.Instructions.Parser
 						break;
 					case ILOpCode.Sub:
 						this.Read(SubtractInstruction.Subtract(), offset);
+						break;
+
+					case ILOpCode.Initobj:
+						this.Read(InitObjectInstruction.Handle(reader.ReadInt32()), offset);
+						break;
+
+					case ILOpCode.Ldfld:
+						this.Read(LoadFieldValueInstruction.Handle(reader.ReadInt32()), offset);
+						break;
+
+					case ILOpCode.Stfld:
+						this.Read(SaveFieldValueInstruction.Handle(reader.ReadInt32()), offset);
 						break;
 
 					default:

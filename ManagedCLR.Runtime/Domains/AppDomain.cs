@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using ManagedCLR.JIT;
 using ManagedCLR.Runtime.Assembly.Loader;
 using ManagedCLR.Runtime.Type.Loader;
@@ -23,6 +24,7 @@ namespace ManagedCLR.Runtime.Domains
 			this.TypeLoader = new TypeLoader();
 
 			this.assemblies = new Dictionary<string, AssemblyLoader>();
+			this.assemblies["System.Private.CoreLib"] = new AssemblyLoader(this.TypeLoader, typeof(int).Assembly.Location);
 		}
 
 		public void Load(FileInfo file) => this.Load(file.FullName);
@@ -36,12 +38,14 @@ namespace ManagedCLR.Runtime.Domains
 
 		public TypeMethodHandle GetMethod(BaseJIT jit)
 		{
-			foreach (AssemblyLoader loader in this.assemblies.Values)
+			foreach (AssemblyLoader loader in this.assemblies.Values.Skip(1))
 			{
 				return loader.ReadMethod(jit, loader.EntryMethod);
 			}
 
 			throw new EntryPointNotFoundException();
 		}
+
+		public AssemblyLoader GetAssembly(string path) => this.assemblies[path];
 	}
 }
