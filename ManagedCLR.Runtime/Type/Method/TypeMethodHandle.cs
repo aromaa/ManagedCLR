@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ManagedCLR.IL.Methods;
 using ManagedCLR.JIT;
@@ -11,9 +12,9 @@ namespace ManagedCLR.Runtime.Type.Method
 	{
 		[DllImport("kernel32.dll")]
 		static extern nuint VirtualAlloc(IntPtr lpAddress,
-		                                 int dwSize,
-		                                 AllocationType flAllocationType,
-		                                 MemoryProtection flProtect);
+										 int dwSize,
+										 AllocationType flAllocationType,
+										 MemoryProtection flProtect);
 
 		[Flags]
 		public enum AllocationType
@@ -44,50 +45,71 @@ namespace ManagedCLR.Runtime.Type.Method
 			NoCacheModifierflag = 0x200,
 			WriteCombineModifierflag = 0x400
 		}
+		
+		private readonly UnmanagedDataHolder unmanagedData;
 
 		public AssemblyLoader Loader { get; init; }
 		public ILMethodDefinition IL { get; }
 
 		public BaseJIT Jit { get; }
 
-		internal PinnedData ClrData { get; }
-
 		public ImmutableArray<TypeHandle> Locals { get; init; }
 
-		public TypeMethodHandle(BaseJIT jit, uint slot, ILMethodDefinition il)
+		public TypeMethodHandle(BaseJIT jit, ILMethodDefinition il)
 		{
+			this.unmanagedData = new UnmanagedDataHolder(this);
+
 			this.Jit = jit;
 
 			this.IL = il;
 
 			nuint stub = TypeMethodHandle.VirtualAlloc(default, 1024, AllocationType.Commit, MemoryProtection.ExecuteReadWrite);
 
-			jit.WriteStub(slot, stub, il.MaxStack + il.ArgumentsCount);
+			jit.WriteStub((nuint)(nint)this.PinnedData.Handle, stub, il.MaxStack + il.ArgumentsCount);
 
-			this.ClrData = new PinnedData()
-			{
-				Slot = slot,
-
-				codeSection = stub
-			};
-
-			GCHandle.Alloc(this.ClrData, GCHandleType.Pinned);
+			this.EntryPointer = stub;
 		}
+
+		private ref PinnedDataHolder PinnedData => ref this.unmanagedData.PinnedData;
 
 		public nuint EntryPointer
 		{
-			get => this.ClrData.codeSection;
-			set => this.ClrData.codeSection = value;
+			get => this.PinnedData.codeSection;
+			set => this.PinnedData.codeSection = value;
 		}
 
-		public ref nuint EntryPointerRef => ref this.ClrData.codeSection;
+		public ref nuint EntryPointerRef => ref this.PinnedData.codeSection;
+
+		private readonly unsafe struct UnmanagedDataHolder
+		{
+			private readonly PinnedDataHolder* pinnedData;
+
+			internal UnmanagedDataHolder(TypeMethodHandle handle)
+			{
+				//Well... We can't allocate a single non-array objects in the POH directly
+				//And the API doesn't directly allow reference objects in the POH arrays (however this is supported by the GC and can be easily worked around)
+				//But we don't want to fragment the gen 0 heap, so instead, lets create a length 1 array in the POH with blittable struct which contains the pinned data
+				ref PinnedDataHolder pinnedData = ref MemoryMarshal.GetArrayDataReference(GC.AllocateArray<PinnedDataHolder>(length: 1, pinned: true));
+
+				pinnedData = new PinnedDataHolder(handle);
+
+				this.pinnedData = (PinnedDataHolder*)Unsafe.AsPointer(ref pinnedData);
+			}
+
+			internal ref PinnedDataHolder PinnedData => ref Unsafe.AsRef<PinnedDataHolder>(this.pinnedData);
+		}
 
 		[StructLayout(LayoutKind.Sequential)]
-		internal sealed class PinnedData
+		private struct PinnedDataHolder
 		{
-			internal uint Slot { get; init; }
+			internal GCHandle Handle { get; }
 
 			internal nuint codeSection;
+
+			internal PinnedDataHolder(TypeMethodHandle handle) : this()
+			{
+				this.Handle = GCHandle.Alloc(handle);
+			}
 		}
 	}
 }

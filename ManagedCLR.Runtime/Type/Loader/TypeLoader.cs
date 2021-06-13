@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using ManagedCLR.Runtime.Type.Method;
 using AppDomain = ManagedCLR.Runtime.Domains.AppDomain;
@@ -13,24 +15,9 @@ namespace ManagedCLR.Runtime.Type.Loader
 	{
 		private ConcurrentDictionary<string, TypeHandle> types;
 
-		//Workaround for now because we can't pin pointers in .NET 5 (Support for pinned references is however enabled in master (.NET 6) but not exposed in the API)
-		private ConcurrentDictionary<uint, TypeMethodHandle> slots;
-		private uint nextSlot;
-
 		public TypeLoader()
 		{
 			this.types = new ConcurrentDictionary<string, TypeHandle>();
-
-			this.slots = new ConcurrentDictionary<uint, TypeMethodHandle>();
-		}
-
-		public uint GetNextSlot() => Interlocked.Increment(ref this.nextSlot);
-
-		public TypeMethodHandle GetSlot(uint slot) => this.slots[slot];
-
-		internal void RegisterMethodHandle(TypeMethodHandle handle)
-		{
-			this.slots[handle.ClrData.Slot] = handle;
 		}
 
 		public TypeHandle LoadType(MetadataReader reader, TypeDefinition type)
@@ -58,6 +45,13 @@ namespace ManagedCLR.Runtime.Type.Loader
 
 				Offsets = offsets,
 			});
+		}
+
+		public TypeMethodHandle GetMethodSlot(nuint slot)
+		{
+			GCHandle handle = GCHandle.FromIntPtr((nint)slot);
+
+			return Unsafe.As<TypeMethodHandle>(handle.Target)!;
 		}
 
 		public TypeHandle LoadType(string assembly, string type)

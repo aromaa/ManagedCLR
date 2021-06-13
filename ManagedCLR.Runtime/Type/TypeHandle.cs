@@ -65,14 +65,12 @@ namespace ManagedCLR.Runtime.Type
 				Blocks = new Dictionary<int, BasicBlock>(ilReader.blocks)
 			};
 
-			TypeMethodHandle handle = new(jit, this.typeLoader.GetNextSlot(), il)
+			TypeMethodHandle handle = new(jit, il)
 			{
 				Loader = loader,
 
 				Locals = locals
 			};
-
-			this.typeLoader.RegisterMethodHandle(handle);
 
 			//TODO: Support different signatures
 			return this.methods.GetOrAdd(methodName, handle);

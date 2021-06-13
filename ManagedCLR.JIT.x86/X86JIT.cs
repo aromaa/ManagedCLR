@@ -80,9 +80,9 @@ namespace ManagedCLR.JIT.x86
 		}
 
 		[UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
-		public static nuint JitCallback(uint slot)
+		public static nuint JitCallback(nuint slot)
 		{
-			TypeMethodHandle handle = AppDomain.Instance.TypeLoader.GetSlot(slot);
+			TypeMethodHandle handle = AppDomain.Instance.TypeLoader.GetMethodSlot(slot);
 
 			X86CompilerTask task = new((X86JIT)handle.Jit, AppDomain.Instance, handle);
 			task.Compile();
@@ -92,11 +92,11 @@ namespace ManagedCLR.JIT.x86
 			return handle.EntryPointer;
 		}
 		
-		public override unsafe void WriteStub(uint slot, nuint memory, int maxStack)
+		public override unsafe void WriteStub(nuint slot, nuint memory, int maxStack)
 		{
 			BlobWriter writer = new(new byte[1024]);
 			
-			delegate* unmanaged[Stdcall]<uint, nuint> callback = &JitCallback;
+			delegate* unmanaged[Stdcall]<nuint, nuint> callback = &JitCallback;
 
 			//Prep stub stack
 			X86.PushInstruction.PushRbp().Write(ref writer);

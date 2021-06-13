@@ -27,7 +27,7 @@ namespace ManagedCLR.JIT.Tests.Helpers
 
 			X86JIT jit = new();
 
-			delegate* unmanaged<void> method = jit.LoadMethod(appDomain, appDomain.GetMethod());
+			delegate* unmanaged<void> method = jit.LoadMethod(appDomain, appDomain.GetMethod(jit));
 			if (typeof(TOut) == typeof(ValueTuple)) //"Void"
 			{
 				method();
